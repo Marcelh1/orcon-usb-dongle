@@ -55,6 +55,9 @@ enum RFSTATE
 #define CC1101_GDO2 11
 #define chipSelectPin 4
 
+#define PAIR_TIME_OUT   10000  // ms
+#define RX_TIME_OUT     300    // ms
+
 /**
  * Working modes
  */
@@ -298,10 +301,6 @@ class CC1101
 	
   public:
 	bool debug_flag;
-    bool pair_timeout_flag;    
-	int16_t pair_timeout_cntr;
-	bool rx_timeout_flag;
-	int16_t rx_timeout_cntr;
 
 	struct datapoints
 	{

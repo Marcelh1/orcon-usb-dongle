@@ -189,51 +189,61 @@ uint8_t CC1101::calc_crc(uint8_t dataframe[], uint8_t len)
 
 bool CC1101::clone_mode(void)
 {
-
   uint8_t rx_buffer[33];  
   bool rf15_frame_valid = false;
-
-  pair_timeout_cntr = 0;  
-  pair_timeout_flag = false;
-
+  unsigned long previousMillis = 0;
+  unsigned long currentMillis = 0;
+  bool pair_timeout_flag = false;    
+  
+  previousMillis = millis();
+  
   while( !rf15_frame_valid && !pair_timeout_flag ) // wait till both frames received, or timeout
   {
-	while(Serial1.available() > 0) 
+	// Handle timeout
+    currentMillis = millis();
+	if(currentMillis - previousMillis > PAIR_TIME_OUT) 
+		pair_timeout_flag = true;
+	else
 	{
-	  // Fifo buffer
-	  for(uint8_t i = 0; i < 32; i++)
-		rx_buffer[i] = rx_buffer[i+1];
-	  rx_buffer[32] = Serial1.read();
-
-	  // Check for frame validity	  
-	  if( (rx_buffer[0] == 0x00) && (rx_buffer[1] == 0x33) && (rx_buffer[2] == 0x55) && (rx_buffer[3] == 0x53) && (rx_buffer[32] == 0x35) )
-	  {		
-		if((rx_buffer[4] == 0xA9) && (rx_buffer[5] == 0x5A)) // RF15 frame (write + ADDR0+ ADDR1)
+	  
+		while(Serial1.available() > 0) 
 		{
-			uint8_t payload_buff[28];
-			uint8_t x = 0;
-			for(uint8_t i = 4; i < 32; i++)
-			{
-				payload_buff[x] = rx_buffer[i];
-				x++;
-			}			
-			
-			uint8_t rx_payload[14];
-			manchester_decode(payload_buff, 28, rx_payload);
-			
-			if(calc_crc(rx_payload, 14) == rx_payload[13])
-			{
+		  // Fifo buffer
+		  for(uint8_t i = 0; i < 32; i++)
+			rx_buffer[i] = rx_buffer[i+1];
+		  rx_buffer[32] = Serial1.read();
 
-			  // Clone and store RF15 address in EEPROM
-			  for(uint8_t i = 1; i < 7; i++)
-				EEPROM.update(i-1, rx_payload[i]);	
-			
-			  rf15_frame_valid = true;				
-			}
+		  // Check for frame validity	  
+		  if( (rx_buffer[0] == 0x00) && (rx_buffer[1] == 0x33) && (rx_buffer[2] == 0x55) && (rx_buffer[3] == 0x53) && (rx_buffer[32] == 0x35) )
+		  {		
+			if((rx_buffer[4] == 0xA9) && (rx_buffer[5] == 0x5A)) // RF15 frame (write + ADDR0+ ADDR1)
+			{
+				uint8_t payload_buff[28];
+				uint8_t x = 0;
+				for(uint8_t i = 4; i < 32; i++)
+				{
+					payload_buff[x] = rx_buffer[i];
+					x++;
+				}			
+				
+				uint8_t rx_payload[14];
+				manchester_decode(payload_buff, 28, rx_payload);
+				
+				if(calc_crc(rx_payload, 14) == rx_payload[13])
+				{
 
-		} 
-	  }		
-    }
+				  // Clone and store RF15 address in EEPROM
+				  for(uint8_t i = 1; i < 7; i++)
+					EEPROM.update(i-1, rx_payload[i]);	
+				
+				  rf15_frame_valid = true;				
+				}
+
+			} 
+		  }		
+		}
+	}
+	
   }
   
   return rf15_frame_valid;
@@ -297,6 +307,10 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 	uint8_t rx_frame_lenght = 0;	
 	uint8_t tx_payload_encoded[len*2];
 	
+    unsigned long previousMillis = 0;
+    unsigned long currentMillis = 0;
+    bool rx_timeout_flag = false;    	
+	
 	// Manchester encode payload
 	manchester_encode(payload, len, tx_payload_encoded);	
 	
@@ -328,72 +342,80 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 	setRxState();
 	
 	// Read serial data, variable frame lenght
-	rx_timeout_cntr = 0;
-	rx_timeout_flag = false;
+	previousMillis = millis();
+	
 	while( !orcon_frame_valid && !rx_timeout_flag ) // wait till both frames received, or timeout
 	{
-		while( (Serial1.available() > 0) && (!orcon_frame_valid) ) // Exit loop when frame recognised
-		{
-		  // Fifo buffer
-		  for(uint8_t i = 0; i < buff_lenght-1; i++)
-			rx_buffer[i] = rx_buffer[i+1];
-		  rx_buffer[buff_lenght-1] = Serial1.read();
-		  
-		  if(header_detected_flag) 
-		  {  
-			rx_frame_lenght++;
-			
-			if(rx_buffer[buff_lenght-1] == 0x35) 								// FRAME COMPLETE!
+		// Handle timeout
+		currentMillis = millis();
+		if(currentMillis - previousMillis > RX_TIME_OUT) 
+			rx_timeout_flag = true;
+		else
+		{		
+		
+			while( (Serial1.available() > 0) && (!orcon_frame_valid) ) // Exit loop when frame recognised
 			{
-				uint8_t bof_frame = buff_lenght-rx_frame_lenght-2; 				// 100 - 27 - 2 => 71
-				uint8_t dataframe_encoded[buff_lenght-1-bof_frame]; 			// 100 - 71 => 28
-				uint8_t frame_decoded_lenght = ((buff_lenght-bof_frame)-1)/2; 	// (100 - 71 - 1) / 2 => 14
+			  // Fifo buffer
+			  for(uint8_t i = 0; i < buff_lenght-1; i++)
+				rx_buffer[i] = rx_buffer[i+1];
+			  rx_buffer[buff_lenght-1] = Serial1.read();
+			  
+			  if(header_detected_flag) 
+			  {  
+				rx_frame_lenght++;
 				
-				uint8_t x = 0;
-				for(uint8_t i = bof_frame; i < buff_lenght-1; i++)
+				if(rx_buffer[buff_lenght-1] == 0x35) 								// FRAME COMPLETE!
 				{
-					dataframe_encoded[x] = rx_buffer[i];
-					x++;
-				}
-
-				uint8_t dataframe_decoded[frame_decoded_lenght];
-				manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
-							
-				// CRC check
-				if(calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght-1])
-				{
-					// Check address!
-					orcon_frame_valid = true;					
-					for(uint8_t i = 4; i < 7; i++)
+					uint8_t bof_frame = buff_lenght-rx_frame_lenght-2; 				// 100 - 27 - 2 => 71
+					uint8_t dataframe_encoded[buff_lenght-1-bof_frame]; 			// 100 - 71 => 28
+					uint8_t frame_decoded_lenght = ((buff_lenght-bof_frame)-1)/2; 	// (100 - 71 - 1) / 2 => 14
+					
+					uint8_t x = 0;
+					for(uint8_t i = bof_frame; i < buff_lenght-1; i++)
 					{
-					  if(dataframe_decoded[i] != EEPROM.read(i-1))
-					   orcon_frame_valid = false;					
+						dataframe_encoded[x] = rx_buffer[i];
+						x++;
 					}
-														
-					if(orcon_frame_valid) // Update states
+
+					uint8_t dataframe_decoded[frame_decoded_lenght];
+					manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
+								
+					// CRC check
+					if(calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght-1])
 					{
-						orcon_state.fan_speed = dataframe_decoded[12];
-					}					
+						// Check address!
+						orcon_frame_valid = true;					
+						for(uint8_t i = 4; i < 7; i++)
+						{
+						  if(dataframe_decoded[i] != EEPROM.read(i-1))
+						   orcon_frame_valid = false;					
+						}
+															
+						if(orcon_frame_valid) // Update states
+						{
+							orcon_state.fan_speed = dataframe_decoded[12];
+						}					
+						else
+						{
+							if(debug_flag)
+								Serial.println("> Dataframe error!");
+						}
+					}
 					else
 					{
 						if(debug_flag)
-							Serial.println("> Dataframe error!");
+							Serial.println("> CRC Error!");
 					}
 				}
-				else
-				{
-					if(debug_flag)
-						Serial.println("> CRC Error!");
-				}
-			}
-		  }
-		  else
-		  {
-			if( (rx_buffer[99] == 0x6A) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00) )
-				header_detected_flag = true;
-		  }
+			  }
+			  else
+			  {
+				if( (rx_buffer[99] == 0x6A) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00) )
+					header_detected_flag = true;
+			  }
 
-		}	
+			}
+		}			
 	}
 	
 	// Back to idle/power down
