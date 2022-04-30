@@ -3,8 +3,6 @@ Use ESP32 or Arduino board having 2 UARTs. Please be aware of IO voltage levels 
 
 ![usb dongle](https://github.com/Marcelh1/orcon-usb-dongle/blob/main/3DModel.png)
 
-![usb dongle](https://tweakers.net/i/g_-GBxCCM6Ay2VLwS0zH_Zez9-4=/full-fit-in/4920x3264/filters:max_bytes(3145728):no_upscale():strip_icc():fill(white):strip_exif()/f/image/FWoJ8TzERY2RuCxRh4murepU.jpg?f=user_large?raw=true)
-
 The repository contains two folders:
 - standalone
 - Firmata
