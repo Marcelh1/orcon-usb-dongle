@@ -31,5 +31,6 @@ The "Firmata" version is able to communicate with home automation systems like "
 Also the Firmata version will support pairing for the frst 2,5sec. Firmata for Home Assistant only allow the Arduino "Lights" to receive a analog value. Normally lights in Home Assistant are being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
 
 You can add custom card to the Lovelace front panel like this:
+
 ![custom card](https://tweakers.net/i/92_YFrTlCgnYt5MYhOnoPeuxj60=/full-fit-in/4000x4000/filters:no_upscale():fill(white):strip_exif()/f/image/rBX8e7hh46UIrR00872p1JKJ.png?f=user_large)
 
