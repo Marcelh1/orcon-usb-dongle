@@ -34,3 +34,5 @@ You can add custom card to the Lovelace front panel like this:
 
 ![custom card](https://tweakers.net/i/92_YFrTlCgnYt5MYhOnoPeuxj60=/full-fit-in/4000x4000/filters:no_upscale():fill(white):strip_exif()/f/image/rBX8e7hh46UIrR00872p1JKJ.png?f=user_large)
 
+The schematic can be found here: [Click!](https://github.com/Marcelh1/orcon-usb-dongle/blob/main/Schematic%20USB%20Dongle.pdf)
+
