@@ -8,7 +8,7 @@ The repository contains two folders:
 - firmata
 
 # Standalone version
-The "standalone" is the most basic version to communicate with the Orcon unit, after powering the USB dongle, it will stay in pairing mode for 5sec, when you press a button on the RF15 remote control, the addresses will be copied. If no button pressed within 5sec, it will use previous stored address in ram. The addresses will be stored in ram so that it is not forgotten during power off.
+The "standalone" is the most basic version to communicate with the Orcon unit, after powering the USB dongle, it will stay in "clone mode" for 5sec, when you press a button on the RF15 remote control, the addresses will be copied. If no button pressed within 5sec, it will use previous stored address in eeprom. The addresses will be stored in eeprom so that it is not forgotten during power off.
 
 # Firmata version
 The "Firmata" version is able to communicate with home automation systems like "Home Assistant". You have to configure it like this:
@@ -28,7 +28,7 @@ The "Firmata" version is able to communicate with home automation systems like "
       differential: 1
 ```
 
-Also the Firmata version will support pairing for the frst 2,5sec. To be able to write and read the FAN speed from Home Assistant, a "sensor" and "light" entity is used. At the moment this is the only method to communicate an analog value between Home Assistant and the Arduino board. Normallythe entity: "lights" in Home Assistant is being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
+Also the Firmata version will support "clone mode" for the frst 2,5sec. To be able to write and read the FAN speed from Home Assistant, a "sensor" and "light" entity is used. At the moment this is the only method to communicate an analog value between Home Assistant and the Arduino board. Normallythe entity: "lights" in Home Assistant is being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
 
 You can add custom card to the Lovelace front panel like this:
 
