@@ -28,7 +28,7 @@ The "Firmata" version is able to communicate with home automation systems like "
       differential: 1
 ```
 
-Also the Firmata version will support pairing for the frst 2,5sec. Firmata for Home Assistant only allow the Arduino "Lights" to receive a analog value. Normally lights in Home Assistant are being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
+Also the Firmata version will support pairing for the frst 2,5sec. To be able to write and read the FAN speed from Home Assistant, a "sensor" and "light" entity is used. At the moment this is the only method to communicate an analog value between Home Assistant and the Arduino board. Firmata for Home Assistant only allow the Arduino "Lights" to receive a analog value. Normally lights in Home Assistant are being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
 
 You can add custom card to the Lovelace front panel like this:
 
