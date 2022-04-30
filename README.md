@@ -5,7 +5,7 @@ Use ESP32 or Arduino board having 2 UARTs. Please be aware of IO voltage levels 
 
 The repository contains two folders:
 - standalone
-- Firmata
+- firmata
 
 # Standalone version
 The "standalone" is the most basic version to communicate with the Orcon unit, after powering the USB dongle, it will stay in pairing mode for 5sec, when you press a button on the RF15 remote control, the addresses will be copied. If no button pressed within 5sec, it will use previous stored address in ram. The addresses will be stored in ram so that it is not forgotten during power off.
