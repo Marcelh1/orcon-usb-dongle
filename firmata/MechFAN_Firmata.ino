@@ -14,6 +14,7 @@ enum module_states
 {
   JUST_BOOTED,
   RF15_PAIRINGSMODE,
+  FIRMATA_INIT,
   NORMAL_MODE
 };
 
@@ -410,29 +411,6 @@ void setup()
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, HIGH);
   
-  Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-
-  Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
-  Firmata.attach(DIGITAL_MESSAGE, digitalWriteCallback);
-  Firmata.attach(REPORT_ANALOG, reportAnalogCallback);
-  Firmata.attach(REPORT_DIGITAL, reportDigitalCallback);
-  Firmata.attach(SET_PIN_MODE, setPinModeCallback);
-  Firmata.attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
-  Firmata.attach(START_SYSEX, sysexCallback);
-  Firmata.attach(SYSTEM_RESET, systemResetCallback);
-
-  // to use a port other than Serial, such as Serial1 on an Arduino Leonardo or Mega,
-  // Call begin(baud) on the alternate serial port and pass it to Firmata to begin like this:
-  // Serial1.begin(57600);
-  // Firmata.begin(Serial1);
-  // However do not do this if you are using SERIAL_MESSAGE
-
-  Firmata.begin(57600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
-  }
-
-  systemResetCallback();  // reset to default config
 }
 
 /*==============================================================================
@@ -461,12 +439,41 @@ void loop()
         break;
   
       case (RF15_PAIRINGSMODE):
-  
-        radio.set_rx_mode();
-  
+        digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
+        radio.set_rx_mode();  
         radio.clone_mode();  
-        dongle_state = NORMAL_MODE;
+        digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF
+        dongle_state = FIRMATA_INIT;
   
+        break;
+
+      case (FIRMATA_INIT):
+        Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
+      
+        Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
+        Firmata.attach(DIGITAL_MESSAGE, digitalWriteCallback);
+        Firmata.attach(REPORT_ANALOG, reportAnalogCallback);
+        Firmata.attach(REPORT_DIGITAL, reportDigitalCallback);
+        Firmata.attach(SET_PIN_MODE, setPinModeCallback);
+        Firmata.attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
+        Firmata.attach(START_SYSEX, sysexCallback);
+        Firmata.attach(SYSTEM_RESET, systemResetCallback);
+      
+        // to use a port other than Serial, such as Serial1 on an Arduino Leonardo or Mega,
+        // Call begin(baud) on the alternate serial port and pass it to Firmata to begin like this:
+        // Serial1.begin(57600);
+        // Firmata.begin(Serial1);
+        // However do not do this if you are using SERIAL_MESSAGE
+      
+        Firmata.begin(57600);
+        while (!Serial) {
+          ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
+        }
+      
+        systemResetCallback();  // reset to default config
+
+        dongle_state = NORMAL_MODE;
+        
         break;
   
       case (NORMAL_MODE):

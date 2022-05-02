@@ -300,7 +300,6 @@ class CC1101
 	uint8_t calc_crc(uint8_t dataframe[], uint8_t len);
 	
   public:
-	bool debug_flag;
 
 	struct datapoints
 	{

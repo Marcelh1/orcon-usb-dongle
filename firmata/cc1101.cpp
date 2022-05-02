@@ -349,7 +349,6 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 			rx_timeout_flag = true;
 		else
 		{
-
 			while ((Serial1.available() > 0) && (!orcon_frame_valid))	// Exit loop when frame recognised
 			{
 			 	// Fifo buffer
@@ -394,14 +393,12 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 							}
 							else
 							{
-								if (debug_flag)
-									Serial.println("> Dataframe error!");
+								//Serial.println("> Dataframe error!");
 							}
 						}
 						else
 						{
-							if (debug_flag)
-								Serial.println("> CRC Error!");
+							//Serial.println("> CRC Error!");
 						}
 					}
 				}
