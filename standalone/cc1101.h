@@ -55,7 +55,7 @@ enum RFSTATE
 #define CC1101_GDO2 11
 #define chipSelectPin 4
 
-#define PAIR_TIME_OUT   10000  // ms
+#define PAIR_TIME_OUT   2500   // ms
 #define RX_TIME_OUT     300    // ms
 
 /**
@@ -300,7 +300,6 @@ class CC1101
 	uint8_t calc_crc(uint8_t dataframe[], uint8_t len);
 	
   public:
-	bool debug_flag;
 
 	struct datapoints
 	{
@@ -332,4 +331,3 @@ class CC1101
 };
 
 #endif
-
