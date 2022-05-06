@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include "cc1101.h"
-#define REQUEST_RATE 2500  // ms
-#define ONBOARD_LED 7
+#define REQUEST_RATE                2500  // ms
+#define ONBOARD_LED                 7
+#define LED_FLASH_TIME              50  // ms
 
 enum module_states
 {
@@ -14,6 +15,19 @@ CC1101 radio;
 
 //******************************************************************************************//
 //                                                                                          //
+//                        Led flash                                                         //
+//                                                                                          //
+//******************************************************************************************//
+
+void led_flash_once_ms(int blink_time)
+{
+  digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
+  delay(blink_time);
+  digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF   
+}
+
+//******************************************************************************************//
+//                                                                                          //
 //                        Init                                                              //
 //                                                                                          //
 //******************************************************************************************//
@@ -22,11 +36,10 @@ void setup()
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, HIGH);
 
-  if (radio.debug_flag)
-    Serial.begin(9600); // Virtual comport via USB
-
+  Serial.begin(9600); // Virtual comport via USB
+  while(!Serial)
+  
   Serial1.begin(38400); // used for transmitting data to Orcon  
-  delay(2500);
 
 }
 
@@ -38,8 +51,6 @@ void setup()
 void loop()
 {
   module_states dongle_state = JUST_BOOTED;
-
-  delay(2500);
 
   while (1)
   {
@@ -65,12 +76,16 @@ void loop()
 
         Serial.println("> Enter cloning mode ");
         Serial.println("> Press button on RF15");
+        
+        digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
         radio.set_rx_mode();
 
         if (radio.clone_mode()) // try to clone system, timeouts after 5sec 
           Serial.println("> Clone succesfull!\n");
         else
           Serial.println("> No RF15 messages received!\n");
+        
+        digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF
 
         /*EEPROM ADDRESS
          *0 - 2 => RF15 address
@@ -101,7 +116,11 @@ void loop()
 
       case (NORMAL_MODE):
 
-        Serial.println(radio.request_orcon_state());
+        if(radio.request_orcon_state())
+        {
+          Serial.println(radio.request_orcon_state());
+          led_flash_once_ms(LED_FLASH_TIME);
+        }
         delay(REQUEST_RATE);
 
         break;
