@@ -12,6 +12,8 @@
 
 #define LED_FLASH_TIME              25  // ms
 
+#define TX_RETRY_CNT                5  // x
+
 enum module_states
 {
   JUST_BOOTED,
@@ -433,6 +435,7 @@ void loop()
   unsigned long req_current_millis = 0;
   unsigned long prev_req_current_millis = 0;
   int prev_fan_speed_req = 0;
+  uint8_t tx_retry_cntr = 0;
 
   while (1)
   {
@@ -487,16 +490,24 @@ void loop()
   
       case (NORMAL_MODE):
 
-            if(prev_fan_speed_req != fan_speed_req)     // Set new data or fan speed request?
-            {
-              
-              if(radio.tx_orcon(fan_speed_req)) // Succes, blink led
-                led_flash_once_ms(LED_FLASH_TIME);
-              prev_fan_speed_req = fan_speed_req;
+            if(prev_fan_speed_req != fan_speed_req)                   // Set new data or fan speed request?
+            { 
+              if(tx_retry_cntr < TX_RETRY_CNT)
+              {
+                if(radio.tx_orcon(fan_speed_req))                     // Succes, blink led
+                {
+                  led_flash_once_ms(LED_FLASH_TIME);
+                  prev_fan_speed_req = radio.orcon_state.fan_speed;   // If ok, current fan speed should match requested one
+                }
+                tx_retry_cntr++;
+              }
+              else
+                prev_fan_speed_req = fan_speed_req;                   // Forget about this session, maybe more succes next time?
             }
             else 
             {
-  
+              tx_retry_cntr = 0; // reset cntr
+              
               // Request or set new fan speed on regular interval ORCON_INTERVAL
               req_current_millis = millis();
               if( (req_current_millis - prev_req_current_millis) > ORCON_INTERVAL)
