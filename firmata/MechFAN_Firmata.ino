@@ -8,7 +8,9 @@
 #define FAN_ANALOG_PIN              0     // used to report current fan speed
 #define FAN_PWM_PIN                 3     // used to control fan speed
 #define ORCON_INTERVAL              5000  // RF link interval
-#define ONBOARD_LED 7
+#define ONBOARD_LED                 7
+
+#define LED_FLASH_TIME              25  // ms
 
 enum module_states
 {
@@ -413,6 +415,13 @@ void setup()
   
 }
 
+void led_flash_once_ms(int blink_time)
+{
+  digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
+  delay(blink_time);
+  digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF   
+}
+
 /*==============================================================================
    LOOP()
   ============================================================================*/
@@ -480,9 +489,9 @@ void loop()
 
             if(prev_fan_speed_req != fan_speed_req)     // Set new data or fan speed request?
             {
-              digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
-              radio.tx_orcon(fan_speed_req);
-              digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF             
+              
+              if(radio.tx_orcon(fan_speed_req)) // Succes, blink led
+                led_flash_once_ms(LED_FLASH_TIME);
               prev_fan_speed_req = fan_speed_req;
             }
             else 
@@ -493,9 +502,9 @@ void loop()
               if( (req_current_millis - prev_req_current_millis) > ORCON_INTERVAL)
               {
                 prev_req_current_millis += ORCON_INTERVAL;   
-                digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
-                radio.request_orcon_state(); 
-                digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF           
+                
+                if(radio.request_orcon_state())
+                  led_flash_once_ms(LED_FLASH_TIME);
               }
               
             }            
