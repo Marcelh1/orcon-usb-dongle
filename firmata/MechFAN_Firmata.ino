@@ -190,14 +190,14 @@ void analogWriteCallback(byte pin, int value)
       case PIN_MODE_PWM:
         if (IS_PIN_PWM(pin))
         {
-          if(pin == FAN_PWM_PIN)
+          if (pin == FAN_PWM_PIN)
           {
             fan_speed_req = value;
             fan_speed_req = min(fan_speed_req, 4);      // Limit to 4
             fan_speed_req = max(fan_speed_req, 0);      // Not negative
           }
           //else
-            //analogWrite(PIN_TO_PWM(pin), value);
+          //analogWrite(PIN_TO_PWM(pin), value);
         }
         Firmata.setPinState(pin, value);
         break;
@@ -410,18 +410,18 @@ void systemResetCallback()
 void setup()
 {
 
-  Serial1.begin(38400); // used for transmitting data to Orcon  
+  Serial1.begin(38400); // used for transmitting data to Orcon
 
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, HIGH);
-  
+
 }
 
 void led_flash_once_ms(int blink_time)
 {
   digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
   delay(blink_time);
-  digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF   
+  digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF
 }
 
 /*==============================================================================
@@ -436,6 +436,7 @@ void loop()
   unsigned long prev_req_current_millis = 0;
   int prev_fan_speed_req = 0;
   uint8_t tx_retry_cntr = 0;
+  bool sync_flag = false;
 
   while (1)
   {
@@ -443,25 +444,25 @@ void loop()
     {
       case (JUST_BOOTED):
         radio.init();
-  
-        if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) &0x1f) == 1)
+
+        if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & 0x1f) == 1)
           dongle_state = RF15_PAIRINGSMODE;
         else
-          delay(1000); 
+          delay(1000);
         break;
-  
+
       case (RF15_PAIRINGSMODE):
         digitalWrite(ONBOARD_LED, LOW);  // RADIO LED ON
-        radio.set_rx_mode();  
-        radio.clone_mode();  
+        radio.set_rx_mode();
+        radio.clone_mode();
         digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF
         dongle_state = FIRMATA_INIT;
-  
+
         break;
 
       case (FIRMATA_INIT):
         Firmata.setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-      
+
         Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
         Firmata.attach(DIGITAL_MESSAGE, digitalWriteCallback);
         Firmata.attach(REPORT_ANALOG, reportAnalogCallback);
@@ -470,88 +471,82 @@ void loop()
         Firmata.attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
         Firmata.attach(START_SYSEX, sysexCallback);
         Firmata.attach(SYSTEM_RESET, systemResetCallback);
-      
+
         // to use a port other than Serial, such as Serial1 on an Arduino Leonardo or Mega,
         // Call begin(baud) on the alternate serial port and pass it to Firmata to begin like this:
         // Serial1.begin(57600);
         // Firmata.begin(Serial1);
         // However do not do this if you are using SERIAL_MESSAGE
-      
+
         Firmata.begin(57600);
         while (!Serial) {
           ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
         }
-      
+
         systemResetCallback();  // reset to default config
 
         dongle_state = NORMAL_MODE;
-        
-        break;
-  
-      case (NORMAL_MODE):
 
-            if(prev_fan_speed_req != fan_speed_req)                   // Set new data or fan speed request?
-            { 
-              if(tx_retry_cntr < TX_RETRY_CNT)
-              {
-                if(radio.tx_orcon(fan_speed_req))                     // Succes, blink led
-                {
-                  led_flash_once_ms(LED_FLASH_TIME);
-                  prev_fan_speed_req = radio.orcon_state.fan_speed;   // If ok, current fan speed should match requested one
-                }
-                tx_retry_cntr++;
-              }
-              else
-                prev_fan_speed_req = fan_speed_req;                   // Forget about this session, maybe more succes next time?
-            }
-            else 
+        break;
+
+      case (NORMAL_MODE):
+       
+          if (prev_fan_speed_req != fan_speed_req)                  // Set new data or fan speed request?
+          {
+            if (tx_retry_cntr < TX_RETRY_CNT)
             {
-              tx_retry_cntr = 0; // reset cntr
-              
-              // Request or set new fan speed on regular interval ORCON_INTERVAL
-              req_current_millis = millis();
-              if( (req_current_millis - prev_req_current_millis) > ORCON_INTERVAL)
+              if (radio.tx_orcon(fan_speed_req))                    // Succes, blink led
               {
-                prev_req_current_millis += ORCON_INTERVAL;   
-                
-                if(radio.request_orcon_state())
-                  led_flash_once_ms(LED_FLASH_TIME);
+                led_flash_once_ms(LED_FLASH_TIME);
+                prev_fan_speed_req = radio.orcon_state.fan_speed;   // If ok, current fan speed should match requested one
               }
+              tx_retry_cntr++;
+            }
+            else
+              prev_fan_speed_req = fan_speed_req;                   // Forget about this session, maybe more succes next time?
+          }
+          else
+          {
+            tx_retry_cntr = 0; // reset cntr
+  
+            // Request fan speed on regular interval ORCON_INTERVAL
+            req_current_millis = millis();
+            if ( (req_current_millis - prev_req_current_millis) > ORCON_INTERVAL)
+            {
+              prev_req_current_millis += ORCON_INTERVAL;
               
-            }            
-            
-          /* DIGITALREAD - as fast as possible, check for changes and output them to the
-           * FTDI buffer using Serial.print()  */
-          checkDigitalInputs();
-        
-          /* STREAMREAD - processing incoming messagse as soon as possible, while still
-           * checking digital inputs.  */
-          while (Firmata.available())
-            Firmata.processInput();
-        
-          // TODO - ensure that Stream buffer doesn't go over 60 bytes
-        
-          currentMillis = millis();
-          if (currentMillis - previousMillis > samplingInterval) 
-          {              
-            previousMillis += samplingInterval;
-                           
-            /* ANALOGREAD - do all analogReads() at the configured sampling interval */
-            for (pin = 0; pin < TOTAL_PINS; pin++) {
-              if (IS_PIN_ANALOG(pin) && Firmata.getPinMode(pin) == PIN_MODE_ANALOG) 
-              {
-                analogPin = PIN_TO_ANALOG(pin);
-                if (analogInputsToReport & (1 << analogPin)) 
-                {
-                  if(analogPin == FAN_ANALOG_PIN)
-                    Firmata.sendAnalog(analogPin, radio.orcon_state.fan_speed);
-                  else
-                    Firmata.sendAnalog(analogPin, 0);
-                }
-              }
+              if (radio.request_orcon_state())
+                led_flash_once_ms(LED_FLASH_TIME);
             }
           }
-          
+
+        checkDigitalInputs();
+
+        while (Firmata.available())
+          Firmata.processInput();
+
+        // TODO - ensure that Stream buffer doesn't go over 60 bytes
+        currentMillis = millis();        
+        if (currentMillis - previousMillis > samplingInterval)
+        {
+          previousMillis += samplingInterval;
+
+          /* ANALOGREAD - do all analogReads() at the configured sampling interval */
+          for (pin = 0; pin < TOTAL_PINS; pin++) {
+            if (IS_PIN_ANALOG(pin) && Firmata.getPinMode(pin) == PIN_MODE_ANALOG)
+            {
+              analogPin = PIN_TO_ANALOG(pin);
+              if (analogInputsToReport & (1 << analogPin))
+              {
+                if (analogPin == FAN_ANALOG_PIN)
+                  Firmata.sendAnalog(analogPin, radio.orcon_state.fan_speed);
+                else
+                  Firmata.sendAnalog(analogPin, 0);
+              }
+            }
+          }        
+        }
+
         break;
     }
   }
