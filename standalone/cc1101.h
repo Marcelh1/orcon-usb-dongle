@@ -55,7 +55,7 @@ enum RFSTATE
 #define CC1101_GDO2 11
 #define chipSelectPin 4
 
-#define PAIR_TIME_OUT   2500   // ms
+#define PAIR_TIME_OUT   5000   // ms
 #define RX_TIME_OUT     300    // ms
 
 /**
