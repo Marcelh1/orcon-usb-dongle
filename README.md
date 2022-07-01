@@ -13,7 +13,7 @@ The "standalone" is the most basic version to communicate with the Orcon unit, a
 # Firmata version
 The "Firmata" version is able to communicate with home automation systems like "Home Assistant". You have to configure it like this:
 ```
-- serial_port: /dev/serial/by-id/usb-Arduino_LLC_ORCON_RF_Dongle-if00
+- serial_port: /dev/serial/by-id/usb-Arduino_LLC_FanX_RF_Dongle-if00
   serial_baud_rate: 57600
   lights:
     - name: fan speed
