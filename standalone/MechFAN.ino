@@ -37,10 +37,10 @@ void setup()
   digitalWrite(ONBOARD_LED, HIGH);
 
   Serial.begin(9600); // Virtual comport via USB
-  while(!Serial)
+  while(!Serial);
   
   Serial1.begin(38400); // used for transmitting data to Orcon  
-
+  while(!Serial1);
 }
 
 //******************************************************************************************//
@@ -118,7 +118,7 @@ void loop()
 
         if(radio.request_orcon_state())
         {
-          Serial.println(radio.request_orcon_state());
+          Serial.println(radio.orcon_state.fan_speed);
           led_flash_once_ms(LED_FLASH_TIME);
         }
         delay(REQUEST_RATE);
