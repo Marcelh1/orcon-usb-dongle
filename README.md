@@ -13,19 +13,20 @@ The "standalone" is the most basic version to communicate with the Orcon unit, a
 # Firmata version
 The "Firmata" version is able to communicate with home automation systems like "Home Assistant". You have to configure it like this:
 ```
-- serial_port: /dev/serial/by-id/usb-Arduino_LLC_FanX_RF_Dongle-if00
-  serial_baud_rate: 57600
-  lights:
-    - name: fan speed
-      pin_mode: PWM
-      pin: 3
-      minimum: 0
-      maximum: 99
-  sensors:
-    - name: fan speed
-      pin_mode: ANALOG
-      pin: A0
-      differential: 1
+firmata:
+  - serial_port: /dev/serial/by-id/usb-Arduino_LLC_FanX_RF_Dongle-if00
+    serial_baud_rate: 57600
+    lights:
+      - name: fan speed
+        pin_mode: PWM
+        pin: 3
+        minimum: 0
+        maximum: 99
+    sensors:
+      - name: fan speed
+        pin_mode: ANALOG
+        pin: A0
+        differential: 1
 ```
 
 Also the Firmata version will support "clone mode" for the frst 2,5sec. To be able to write and read the FAN speed from Home Assistant, a "sensor" and "light" entity is used. At the moment this is the only method to communicate an analog value between Home Assistant and the Arduino board. Normallythe entity: "lights" in Home Assistant is being controlled by sending percentage based on a range from 0 till 255, therefore setting the min/max to 0-99, will result in percentage equals decimal number, what is more convenient in automations.
