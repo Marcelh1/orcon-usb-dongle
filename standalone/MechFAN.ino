@@ -51,7 +51,8 @@ void setup()
 void loop()
 {
   module_states dongle_state = JUST_BOOTED;
-
+  int prev_speed_lvl = 0;
+  
   while (1)
   {
     switch (dongle_state)
@@ -63,13 +64,13 @@ void loop()
         {
           Serial.println("> CC1101 radio initialized");
           dongle_state = RF15_PAIRINGSMODE;
+          //dongle_state = NORMAL_MODE; //skip clone mode
         }
         else
         {
           Serial.println("> Something went wrong with radio init, will try again");
           delay(1000);
         }
-
         break;
 
       case (RF15_PAIRINGSMODE):
@@ -118,9 +119,18 @@ void loop()
 
         if(radio.request_orcon_state())
         {
-          Serial.println(radio.orcon_state.fan_speed);
+          
+          if(prev_speed_lvl != radio.orcon_state.fan_speed)
+          {
+            Serial.print("FAN Speed changed: ");
+            Serial.println(radio.orcon_state.fan_speed);
+            prev_speed_lvl = radio.orcon_state.fan_speed;
+          }
           led_flash_once_ms(LED_FLASH_TIME);
         }
+        else
+          Serial.println("Error requesting fan speed...");
+          
         delay(REQUEST_RATE);
 
         break;
