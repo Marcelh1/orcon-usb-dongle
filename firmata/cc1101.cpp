@@ -203,7 +203,7 @@ bool CC1101::clone_mode(void)
 		else
 		{
 
-			while( (Serial1.available() > 0) && (!pair_timeout_flag) )
+			while (Serial1.available() > 0)
 			{
 			 	// Fifo buffer
 				for (uint8_t i = 0; i < 32; i++)
@@ -349,7 +349,8 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 			rx_timeout_flag = true;
 		else
 		{
-			while ((Serial1.available() > 0) && (!orcon_frame_valid) && (!rx_timeout_flag))	// Exit loop when frame recognised or timeout
+
+			while ((Serial1.available() > 0) && (!orcon_frame_valid))	// Exit loop when frame recognised
 			{
 			 	// Fifo buffer
 				for (uint8_t i = 0; i < buff_lenght - 1; i++)
@@ -389,22 +390,29 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 
 							if (orcon_frame_valid)	// Update states
 							{
-								orcon_state.fan_speed = dataframe_decoded[12];
+                // Scan for 31D9 message + 5 positions = fan speed
+                // This enabled support for HRC400 as well
+                for (uint8_t i = 0; i < frame_decoded_lenght - 1; i++)
+                {
+                  if( (dataframe_decoded[i] == 0x31) && (dataframe_decoded[i+1] == 0xD9) ) // Position found!
+                    orcon_state.fan_speed = dataframe_decoded[i+5];                 
+                }                
 							}
 							else
 							{
-								//Serial.println("> Dataframe error!");
+								Serial.println("> Dataframe error!");
 							}
 						}
 						else
 						{
-							//Serial.println("> CRC Error!");
+							Serial.println("> CRC Error!");
 						}
 					}
 				}
 				else
 				{
-					if ((rx_buffer[99] == 0x6A) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
+          // Accept 0x6A (MVS15) and 0x66 (HRC400)
+					if ( ((rx_buffer[99] == 0x6A) || (rx_buffer[99] == 0x66)) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
 						header_detected_flag = true;
 				}
 			}
