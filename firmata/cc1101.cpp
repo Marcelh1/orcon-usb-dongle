@@ -399,12 +399,12 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 							}
 							else
 							{
-								Serial.println("> Dataframe error!");
+								//Serial.println("> Dataframe error!");
 							}
 						}
 						else
 						{
-							Serial.println("> CRC Error!");
+							//Serial.println("> CRC Error!");
 						}
 					}
 				}
