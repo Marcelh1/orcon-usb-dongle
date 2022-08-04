@@ -349,8 +349,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 			rx_timeout_flag = true;
 		else
 		{
-
-			while ((Serial1.available() > 0) && (!orcon_frame_valid))	// Exit loop when frame recognised
+			while ((Serial1.available() > 0) && (!orcon_frame_valid) && (!rx_timeout_flag)) // Exit loop when frame recognised or timeout
 			{
 			 	// Fifo buffer
 				for (uint8_t i = 0; i < buff_lenght - 1; i++)
