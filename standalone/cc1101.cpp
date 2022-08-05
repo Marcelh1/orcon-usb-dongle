@@ -186,12 +186,15 @@ uint8_t CC1101::calc_crc(uint8_t dataframe[], uint8_t len)
 
 bool CC1101::clone_mode(void)
 {
-	uint8_t rx_buffer[33];
+	uint8_t buff_lenght = 100;
+	uint8_t rx_buffer[buff_lenght];
 	bool rf15_frame_valid = false;
 	unsigned long previousMillis = 0;
 	unsigned long currentMillis = 0;
 	bool pair_timeout_flag = false;
-
+	bool header_detected_flag = false;
+	uint8_t rx_frame_lenght = 0;
+	
 	previousMillis = millis();
 
 	while (!rf15_frame_valid && !pair_timeout_flag)	// wait till both frames received, or timeout
@@ -201,41 +204,54 @@ bool CC1101::clone_mode(void)
 		if (currentMillis - previousMillis > PAIR_TIME_OUT)
 			pair_timeout_flag = true;
 		else
-		{
-
-			while (Serial1.available() > 0)
+		{			
+			while ((Serial1.available() > 0) && (!rf15_frame_valid) && (!pair_timeout_flag)) // Exit loop when frame recognised or timeout
 			{
 			 	// Fifo buffer
-				for (uint8_t i = 0; i < 32; i++)
+				for (uint8_t i = 0; i < buff_lenght - 1; i++)
 					rx_buffer[i] = rx_buffer[i + 1];
-				rx_buffer[32] = Serial1.read();
+				rx_buffer[buff_lenght - 1] = Serial1.read();
 
-				// Check for frame validity	  
-				if ((rx_buffer[0] == 0x00) && (rx_buffer[1] == 0x33) && (rx_buffer[2] == 0x55) && (rx_buffer[3] == 0x53) && (rx_buffer[32] == 0x35))
+				if (header_detected_flag)
 				{
-					if ((rx_buffer[4] == 0xA9) && (rx_buffer[5] == 0x5A))	// RF15 frame (write + ADDR0+ ADDR1)
+					rx_frame_lenght++;
+
+					if (rx_buffer[buff_lenght - 1] == 0x35)	// FRAME COMPLETE!
 					{
-						uint8_t payload_buff[28];
+						uint8_t bof_frame = buff_lenght - rx_frame_lenght - 2;	// 100 - 27 - 2 => 71
+						uint8_t dataframe_encoded[buff_lenght - 1 - bof_frame];	// 100 - 71 => 28
+						uint8_t frame_decoded_lenght = ((buff_lenght - bof_frame) - 1) / 2;	// (100 - 71 - 1) / 2 => 14
+
 						uint8_t x = 0;
-						for (uint8_t i = 4; i < 32; i++)
+						for (uint8_t i = bof_frame; i < buff_lenght - 1; i++)
 						{
-							payload_buff[x] = rx_buffer[i];
+							dataframe_encoded[x] = rx_buffer[i];
 							x++;
 						}
 
-						uint8_t rx_payload[14];
-						manchester_decode(payload_buff, 28, rx_payload);
+						uint8_t dataframe_decoded[frame_decoded_lenght];
+						manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
 
-						if (calc_crc(rx_payload, 14) == rx_payload[13])
+						// CRC check
+						if (calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
 						{
-
 							// Clone and store RF15 address in EEPROM
 							for (uint8_t i = 1; i < 7; i++)
-								EEPROM.update(i - 1, rx_payload[i]);
-
-							rf15_frame_valid = true;
+								EEPROM.update(i - 1, dataframe_decoded[i]);
+							
+							rf15_frame_valid = true;							
+						}
+						else
+						{
+							Serial.println("> CRC Error!");
 						}
 					}
+				}
+				else
+				{
+					// Detect header from remote control
+					if ( (rx_buffer[99] == 0x5A) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
+						header_detected_flag = true;
 				}
 			}
 		}
