@@ -2,6 +2,9 @@
 #include <Arduino.h>
 #include "cc1101.h"
 
+// Note! Patch in Firmata.cpp to wait for Serial ready: TBD
+// while(!Serial);
+
 // the minimum interval for sampling analog input
 #define MINIMUM_SAMPLING_INTERVAL   1
 
@@ -412,6 +415,10 @@ void setup()
 
   Serial1.begin(38400); // used for transmitting data to Orcon
 
+  while (!Serial1) {
+    ; // wait for serial1 port to connect. Needed for native USB port only
+  }
+  
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, HIGH);
 
@@ -477,11 +484,12 @@ void loop()
         // Serial1.begin(57600);
         // Firmata.begin(Serial1);
         // However do not do this if you are using SERIAL_MESSAGE
-
-        Firmata.begin(57600);
+        
+        Serial.begin(57600);
         while (!Serial) {
           ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
         }
+        Firmata.begin(Serial);
 
         systemResetCallback();  // reset to default config
 
