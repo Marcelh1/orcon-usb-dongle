@@ -1,7 +1,7 @@
 # orcon-usb-dongle
 Use ESP32 or Arduino board having 2 UARTs. Please be aware of IO voltage levels between CC1101 (module) and Arduino motherboard.
 
-![usb dongle](https://github.com/Marcelh1/orcon-usb-dongle/blob/main/3DModel.png)
+![usb dongle](https://github.com/Marcelh1/orcon-usb-dongle/blob/main/high_q.png)
 
 The repository contains two folders:
 - standalone
